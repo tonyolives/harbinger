@@ -16,6 +16,7 @@ A real-time seller-intent pipeline (synthetic data) built as a portfolio piece f
 8. **Don't add dependencies** outside `TECH_STACK.md` without a one-line justification.
 9. **Don't build out-of-scope items** (see below). If tempted, stop and ask.
 10. **Conventional Commits** (`feat:`, `test:`, `fix:`, `refactor:`, `docs:`). One feature branch per phase off `develop`.
+11. **The human owner handles git commits, pushes, and PR creation** unless explicitly asking the agent to do so.
 
 ## Stack
 Spring Boot 3.2, Java 17, Maven. React 18 + Vite frontend. Full list and rationale: `TECH_STACK.md`. Don't reach outside it.
