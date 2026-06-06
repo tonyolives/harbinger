@@ -48,6 +48,20 @@ class EnrichmentServiceTest {
     }
 
     @Test
+    void propertyIsKeyedOnParcelWhileContactIsKeyedOnPerson() {
+        // A resolution miss splits one owner into "bob" and "robert" at the same address.
+        EnrichedHomeowner bob = enrichment.enrich(homeowner("bob smith", "123 main st"));
+        EnrichedHomeowner robert = enrichment.enrich(homeowner("robert smith", "123 main st"));
+
+        // Same parcel → the same house facts, regardless of the name queried.
+        assertThat(bob.property()).isEqualTo(robert.property());
+        // But contact is person-specific, so the split surfaces as diverging contacts.
+        assertThat(bob.contact()).isNotEqualTo(robert.contact());
+        assertThat(bob.contact().email()).isEqualTo("bob.smith@example.invalid");
+        assertThat(robert.contact().email()).isEqualTo("robert.smith@example.invalid");
+    }
+
+    @Test
     void contactIsObviouslyFakeAndFlaggedMock() {
         EnrichedHomeowner enriched = enrichment.enrich(homeowner("john smith", "123 main st"));
 
