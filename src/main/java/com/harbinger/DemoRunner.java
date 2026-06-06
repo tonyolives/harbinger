@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DemoRunner implements CommandLineRunner {
 
-    private static final long DEMO_SEED = 1L;
+    private static final long DEMO_SEED = 2L;
     private static final int OWNERS = 8;
     private static final int SIGNALS_PER_OWNER = 6;
 
