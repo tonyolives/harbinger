@@ -6,6 +6,7 @@ import com.harbinger.service.ingest.AddressNormalizer;
 import com.harbinger.service.ingest.NameNormalizer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,52 @@ public class ResolutionService {
             resolved.add(buildCluster(members, normNames, normAddrs, signals));
         }
         return resolved;
+    }
+
+    /**
+     * Scores a resolution run against ground truth using the standard pairwise metric.
+     * Two signals are "together" if they share a predicted cluster (predicted pair) or a
+     * {@code trueOwnerId} (true pair); a true positive is a pair that is both. From those
+     * counts come precision, recall, and F1.
+     *
+     * <p>This is the <b>only</b> code that reads {@code trueOwnerId} — it is a measurement,
+     * not part of resolving, so {@link #resolve} stays honest. Pure: in-memory only.
+     */
+    public ResolutionMetrics evaluate(List<ResolvedCluster> clusters) {
+        if (clusters == null) {
+            throw new IllegalArgumentException("clusters must not be null");
+        }
+
+        long predictedPairs = 0;
+        long truePositivePairs = 0;
+        Map<UUID, Long> trueGroupSizes = new HashMap<>();
+        for (ResolvedCluster cluster : clusters) {
+            List<RawSignal> members = cluster.signals();
+            predictedPairs += pairCount(members.size());
+
+            // Per-cluster breakdown by true owner: pairs within a (cluster, owner) cell
+            // are the correctly-grouped ones.
+            Map<UUID, Long> ownerCountsInCluster = new HashMap<>();
+            for (RawSignal signal : members) {
+                UUID owner = signal.trueOwnerId();
+                ownerCountsInCluster.merge(owner, 1L, Long::sum);
+                trueGroupSizes.merge(owner, 1L, Long::sum);
+            }
+            for (long cell : ownerCountsInCluster.values()) {
+                truePositivePairs += pairCount(cell);
+            }
+        }
+
+        long truePairs = 0;
+        for (long groupSize : trueGroupSizes.values()) {
+            truePairs += pairCount(groupSize);
+        }
+        return ResolutionMetrics.of(truePositivePairs, predictedPairs, truePairs);
+    }
+
+    /** Number of unordered pairs within a group of {@code n}: n choose 2. */
+    private static long pairCount(long n) {
+        return n * (n - 1) / 2;
     }
 
     /**
