@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * End-to-end accuracy of resolution against real generator output. This is the proof the
@@ -58,9 +60,12 @@ class ResolutionAccuracyIntegrationTest {
         assertThat(m.recall()).isEqualTo(1.0);
     }
 
-    @Test
-    void noisySetMeetsAccuracyTargets() {
-        List<RawSignal> signals = generator.generate(SEED, OWNERS, SIGNALS_PER_OWNER);
+    // Multiple seeds so the accuracy targets reflect general behavior, not a dataset the
+    // thresholds were tuned to.
+    @ParameterizedTest
+    @ValueSource(longs = {1L, 7L, 13L, 42L, 99L, 2024L})
+    void noisySetMeetsAccuracyTargets(long seed) {
+        List<RawSignal> signals = generator.generate(seed, OWNERS, SIGNALS_PER_OWNER);
 
         ResolutionMetrics m = service.evaluate(service.resolve(signals));
 
