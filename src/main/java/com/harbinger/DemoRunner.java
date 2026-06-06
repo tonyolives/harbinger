@@ -26,7 +26,7 @@ public class DemoRunner implements CommandLineRunner {
 
     // Flip to true to inject nicknames the resolver can't reunite and watch the printed
     // recall/F1 fall below 1.0 — a live look at where the rules-based v1 breaks.
-    private static final boolean HARD_MODE = true;
+    private static final boolean HARD_MODE = false;
 
     private final SignalGeneratorService generator;
     private final ResolutionService resolutionService;
