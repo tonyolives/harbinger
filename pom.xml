@@ -110,6 +110,7 @@
 				<configuration>
 					<excludes>
 						<exclude>com/harbinger/HarbingerApplication.class</exclude>
+						<exclude>com/harbinger/DemoRunner.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>
