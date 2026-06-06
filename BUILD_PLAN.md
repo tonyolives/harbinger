@@ -37,9 +37,9 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 - Tests: deterministic property fields; equity never negative-by-bug; contact is obviously fake and flagged `mock: true`.
 - Build: `EnrichmentService`. Returns `EnrichedHomeowner` (`Homeowner` + `PropertyDetails` + `ContactInfo`); property keyed on the parcel (address), contact on the person (name + address); equity non-negative by construction.
 
-**Phase 5 — Scoring** · `feature/scoring`
+**Phase 5 — Scoring** · `feature/scoring` — Done
 - Tests (pure, inject `Clock`): adding a signal never lowers score; older signal contributes less (recency decay); stacked signals score higher; tier thresholds correct; `DEED_TRANSFER` dampens.
-- Build: `ScoringService` — weighted signals + recency decay → score (0–100), tier, reasons. Weights centralized; documented in `docs/SCORING.md`.
+- Build: `ScoringService` — weighted signals + recency decay → score (0–100), tier, reasons. Returns a standalone `Score(value, tier, reasons)` record; weights centralized and documented in `docs/SCORING.md`. Capped linear weighted sum with a 60-day recency half-life; `DEED_TRANSFER` is a negative dampener.
 
 **Phase 6 — Explanations** · `feature/explain`
 - Tests (Mockito, no network): `MockLlmProvider` returns a ≤2-sentence "why this lead" from the reasons; real provider only used when `ANTHROPIC_API_KEY` set.
