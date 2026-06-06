@@ -7,6 +7,8 @@ import com.harbinger.service.enrich.EnrichmentService;
 import com.harbinger.service.resolution.ResolutionMetrics;
 import com.harbinger.service.resolution.ResolvedCluster;
 import com.harbinger.service.resolution.ResolutionService;
+import com.harbinger.service.scoring.Score;
+import com.harbinger.service.scoring.ScoringService;
 import java.util.List;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -31,14 +33,17 @@ public class DemoRunner implements CommandLineRunner {
     private final SignalGeneratorService generator;
     private final ResolutionService resolutionService;
     private final EnrichmentService enrichmentService;
+    private final ScoringService scoringService;
 
     public DemoRunner(
             SignalGeneratorService generator,
             ResolutionService resolutionService,
-            EnrichmentService enrichmentService) {
+            EnrichmentService enrichmentService,
+            ScoringService scoringService) {
         this.generator = generator;
         this.resolutionService = resolutionService;
         this.enrichmentService = enrichmentService;
+        this.scoringService = scoringService;
     }
 
     @Override
@@ -75,6 +80,17 @@ public class DemoRunner implements CommandLineRunner {
                     enriched.property().equity(),
                     enriched.contact().phone(), enriched.contact().email(),
                     enriched.contact().mock());
+        }
+
+        // Score each resolved homeowner from its signals + recency so the Phase 5 step is
+        // visible end to end: an intent score, a tier, and the strongest reason.
+        for (ResolvedCluster cluster : clusters) {
+            Score score = scoringService.score(cluster.signals());
+            String topReason = score.reasons().isEmpty() ? "n/a" : score.reasons().get(0);
+            System.out.printf(
+                    "Scored \"%s\" @ \"%s\" | score=%d tier=%-4s | top reason: %s%n",
+                    cluster.homeowner().name(), cluster.homeowner().address(),
+                    score.value(), score.tier(), topReason);
         }
     }
 }
