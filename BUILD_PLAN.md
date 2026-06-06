@@ -41,9 +41,10 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 - Tests (pure, inject `Clock`): adding a signal never lowers score; older signal contributes less (recency decay); stacked signals score higher; tier thresholds correct; `DEED_TRANSFER` dampens.
 - Build: `ScoringService` — weighted signals + recency decay → score (0–100), tier, reasons. Returns a standalone `Score(value, tier, reasons)` record; weights centralized and documented in `docs/SCORING.md`. Capped linear weighted sum with a 60-day recency half-life; `DEED_TRANSFER` is a negative dampener.
 
-**Phase 6 — Explanations** · `feature/explain`
+**Phase 6 — Explanations** · `feature/explain` — Done
 - Tests (Mockito, no network): `MockLlmProvider` returns a ≤2-sentence "why this lead" from the reasons; real provider only used when `ANTHROPIC_API_KEY` set.
 - Build: `LlmProvider` interface + `MockLlmProvider` (default) + `ClaudeLlmProvider` (opt-in, RestClient).
+- Done: new `com.harbinger.llm` package. `MockLlmProvider` (`@Service`, default) builds a deterministic, tier-aware ≤2-sentence explanation from `Score.reasons()`; `ClaudeLlmProvider` (`@Primary @ConditionalOnProperty` on `anthropic.api-key`, Spring `RestClient`) calls the Claude Messages API (`claude-haiku-4-5`) only when `ANTHROPIC_API_KEY` is set. Tests use Mockito + `MockRestServiceServer` (no network); wiring proven with `ApplicationContextRunner`. Documented in `docs/EXPLANATIONS.md`.
 
 **Phase 7 — Real-time loop + API** · `feature/realtime-api`
 - Tests: a homeowner crossing HOT fires exactly one alert and a lead with `signalToLeadMs` measured (inject `Clock`); leads stay ranked; `GET /api/v1/leads`, `/leads/{id}`, `/metrics`, and SSE `/stream` behave (MockMvc).

@@ -17,8 +17,9 @@ Real-estate agents and investors win by reaching a motivated homeowner **before 
 3. **Resolve** — fuzzy matching merges the messy records into a single homeowner identity (this is the hard part; it's measured for accuracy).
 4. **Enrich** — each homeowner gets property details and a (mock) phone/email.
 5. **Score** — signals combine into a 0–100 intent score and a hot/warm/cold tier, with plain-language reasons.
-6. **Alert** — the instant a homeowner turns hot, a ranked lead is surfaced and the time-to-surface is recorded.
-7. **View** — leads appear live on a map, colored by tier.
+6. **Explain** — those reasons become a short "why this lead" sentence (a deterministic template by default; optionally the Claude API when a key is set).
+7. **Alert** — the instant a homeowner turns hot, a ranked lead is surfaced and the time-to-surface is recorded.
+8. **View** — leads appear live on a map, colored by tier.
 
 ## What it is NOT (deliberately honest)
 
