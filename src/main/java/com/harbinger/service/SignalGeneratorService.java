@@ -32,6 +32,19 @@ public class SignalGeneratorService {
     private static final int NAME_STYLE_COUNT = 6;
     private static final int ADDRESS_STYLE_COUNT = 6;
 
+    /**
+     * {@code {formal, nickname}} first-name pairs for hard mode. The two forms are not
+     * prefix-similar, so fuzzy matching can't bridge them without a lookup table — exactly
+     * the kind of noise that makes a rules-based resolver miss (lowering recall).
+     */
+    private static final List<String[]> NICKNAMES = List.of(
+            new String[] {"Robert", "Bob"},
+            new String[] {"William", "Bill"},
+            new String[] {"Margaret", "Peggy"},
+            new String[] {"Richard", "Dick"},
+            new String[] {"James", "Jim"},
+            new String[] {"John", "Jack"});
+
     private final Clock clock;
 
     public SignalGeneratorService(Clock clock) {
@@ -45,6 +58,19 @@ public class SignalGeneratorService {
      * @return signals grouped owner-by-owner, each owner's variants sharing one {@code trueOwnerId}
      */
     public List<RawSignal> generate(long seed, int ownerCount, int signalsPerOwner) {
+        return generate(seed, ownerCount, signalsPerOwner, false);
+    }
+
+    /**
+     * Same as {@link #generate(long, int, int)} but optionally toggles <b>hard mode</b>.
+     * In hard mode each owner's signals alternate between a formal first name and its
+     * nickname (e.g. "Robert" / "Bob"), keeping the same last name and address. Fuzzy
+     * matching can't reunite nicknames, so the owner splits into multiple clusters and
+     * resolution recall drops below 1.0 — a deliberate, realistic failure case for demos.
+     *
+     * @param hardMode inject nickname noise the rules-based resolver cannot handle
+     */
+    public List<RawSignal> generate(long seed, int ownerCount, int signalsPerOwner, boolean hardMode) {
         if (ownerCount < 1) {
             throw new IllegalArgumentException("ownerCount must be at least 1");
         }
@@ -60,7 +86,6 @@ public class SignalGeneratorService {
         for (int owner = 0; owner < ownerCount; owner++) {
             String firstName = faker.name().firstName();
             String lastName = faker.name().lastName();
-            String cleanName = firstName + " " + lastName;
             String cleanAddress = faker.address().buildingNumber() + " " + faker.address().streetName();
 
             // Derived from the seeded Random (not UUID.randomUUID, which is unseeded) so it's reproducible.
@@ -69,10 +94,14 @@ public class SignalGeneratorService {
             List<Integer> nameStyles = shuffledStyles(NAME_STYLE_COUNT, random);
             List<Integer> addressStyles = shuffledStyles(ADDRESS_STYLE_COUNT, random);
 
+            // Guarded so easy mode consumes no extra randomness — its output stays identical.
+            String[] nickname = hardMode ? NICKNAMES.get(random.nextInt(NICKNAMES.size())) : null;
+
             for (int j = 0; j < signalsPerOwner; j++) {
                 // Distinct styles per signal (wrapping if asked for more than the style count)
                 // guarantee the "messy variants" property regardless of seed.
-                String messyName = perturbName(firstName, lastName, nameStyles.get(j % NAME_STYLE_COUNT));
+                String signalFirstName = (nickname == null) ? firstName : nickname[j % 2];
+                String messyName = perturbName(signalFirstName, lastName, nameStyles.get(j % NAME_STYLE_COUNT));
                 String messyAddress = perturbAddress(cleanAddress, addressStyles.get(j % ADDRESS_STYLE_COUNT), random);
                 Source source = Source.values()[random.nextInt(Source.values().length)];
                 SignalType signalType = SignalType.values()[random.nextInt(SignalType.values().length)];

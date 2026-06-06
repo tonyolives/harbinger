@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.harbinger.model.RawSignal;
+import com.harbinger.service.ingest.NameNormalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -81,6 +82,39 @@ class SignalGeneratorServiceTest {
             assertThat(signal.observedAt()).isBeforeOrEqualTo(FIXED.instant());
             assertThat(signal.trueOwnerId()).isNotNull();
         });
+    }
+
+    @Test
+    void easyModeGivesEachOwnerOneFirstName() {
+        // Baseline for the hard-mode contrast: without nicknames, one owner has a single
+        // full first name across all spellings (only initial-vs-full variation).
+        Set<String> firstNames = fullFirstNames(generator.generate(SEED, 1, 8, false));
+
+        assertThat(firstNames).hasSize(1);
+    }
+
+    @Test
+    void hardModeSplitsAnOwnerAcrossNicknameForms() {
+        // The point of hard mode: one true owner shows up under a formal name AND a
+        // nickname (e.g. "robert" and "bob"), which the resolver can't reunite.
+        Set<String> firstNames = fullFirstNames(generator.generate(SEED, 1, 8, true));
+
+        assertThat(firstNames).hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void hardModeIsDeterministic() {
+        assertThat(generator.generate(SEED, 5, 6, true))
+                .isEqualTo(generator.generate(SEED, 5, 6, true));
+    }
+
+    /** Distinct full (non-initial) first names across the signals, after normalization. */
+    private Set<String> fullFirstNames(List<RawSignal> signals) {
+        NameNormalizer normalizer = new NameNormalizer();
+        return signals.stream()
+                .map(s -> normalizer.normalize(s.rawName()).split(" ")[0])
+                .filter(token -> token.length() > 1) // drop initial-only forms like "r"
+                .collect(Collectors.toSet());
     }
 
     @Test
