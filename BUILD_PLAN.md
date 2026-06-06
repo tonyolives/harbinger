@@ -1,6 +1,6 @@
 # Harbinger — Build Plan
 
-A real-time seller-intent pipeline: turn raw public-record signals into ranked, contactable leads, fast. Built as a portfolio piece for a Goliath Data application — **must be simple enough to explain and defend line-by-line.**
+A real-time seller-intent pipeline: turn raw public-record signals into ranked, contactable leads, fast. Built as a portfolio piece for an application — **must be simple enough to explain and defend line-by-line.**
 
 **North-star metric:** signal-to-lead latency (time from a seller signal appearing to a ranked lead surfacing). Being first is the whole value.
 
@@ -20,22 +20,22 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 
 ## Phases (do in order; each: branch → tests first → implement → green → PR to `develop`)
 
-**Phase 1 — Models + synthetic data** · `feature/models-datagen`
+**Phase 1 — Models + synthetic data** · `feature/models-datagen` — Done
 - Tests: models reject bad input; generator is deterministic per seed; one owner produces several *messy* name/address variants sharing one `trueOwnerId`.
 - Build: `RawSignal`, `Homeowner`, `Lead`, enums (`Source`, `SignalType`, `Tier`); `SignalGeneratorService` (datafaker + perturbations).
 - Done: prints a deterministic stream of labeled messy signals.
 
-**Phase 2 — Normalize** · `feature/ingest`
+**Phase 2 — Normalize** · `feature/ingest` — Done
 - Tests: messy names/addresses collapse to canonical keys; normalizing twice == once.
 - Build: `NameNormalizer`, `AddressNormalizer`.
 
-**Phase 3 — Entity resolution (the centerpiece)** · `feature/resolution`
+**Phase 3 — Entity resolution (the centerpiece)** · `feature/resolution` — Done
 - Tests: clean set → precision/recall = 1.0; noisy set → precision ≥ 0.95, recall ≥ 0.85 and beats naive exact-match; same person/diff spelling → merged; different people/same address → NOT merged.
 - Build: `ResolutionService` — block by address key, fuzzy-match with commons-text (JaroWinkler), cluster with union-find. `evaluate()` computes P/R/F1 (the ONLY place `trueOwnerId` is read).
 
-**Phase 4 — Enrich + mock skip-trace** · `feature/enrich`
+**Phase 4 — Enrich + mock skip-trace** · `feature/enrich` — Done 
 - Tests: deterministic property fields; equity never negative-by-bug; contact is obviously fake and flagged `mock: true`.
-- Build: `EnrichmentService`.
+- Build: `EnrichmentService`. Returns `EnrichedHomeowner` (`Homeowner` + `PropertyDetails` + `ContactInfo`); property keyed on the parcel (address), contact on the person (name + address); equity non-negative by construction.
 
 **Phase 5 — Scoring** · `feature/scoring`
 - Tests (pure, inject `Clock`): adding a signal never lowers score; older signal contributes less (recency decay); stacked signals score higher; tier thresholds correct; `DEED_TRANSFER` dampens.
@@ -55,9 +55,6 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 - Docs: README with real numbers + 45-sec Loom; `docs/SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
 
 ---
-
-## Schedule
-Mon: P1 (+start P2) · Tue: P3 · Wed: P4–P5 · Thu: P6–P7 (be demo-able tonight) · Fri: P8 + ship.
 
 ## Guardrails (non-negotiable)
 - All data **synthetic**; no real scraping, skip-tracing, or PII. Mock contact is obviously fake.
