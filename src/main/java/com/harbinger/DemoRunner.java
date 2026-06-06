@@ -18,9 +18,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DemoRunner implements CommandLineRunner {
 
-    private static final long DEMO_SEED = 3L;
+    private static final long DEMO_SEED = 1L;
     private static final int OWNERS = 8;
     private static final int SIGNALS_PER_OWNER = 10;
+
+    // Flip to true to inject nicknames the resolver can't reunite and watch the printed
+    // recall/F1 fall below 1.0 — a live look at where the rules-based v1 breaks.
+    private static final boolean HARD_MODE = false;
 
     private final SignalGeneratorService generator;
     private final ResolutionService resolutionService;
@@ -32,8 +36,10 @@ public class DemoRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        List<RawSignal> signals = generator.generate(DEMO_SEED, OWNERS, SIGNALS_PER_OWNER);
-        System.out.printf("Generated %d messy signals (seed=%d)%n", signals.size(), DEMO_SEED);
+        List<RawSignal> signals = generator.generate(DEMO_SEED, OWNERS, SIGNALS_PER_OWNER, HARD_MODE);
+        System.out.printf(
+                "Generated %d messy signals (seed=%d, hardMode=%b)%n",
+                signals.size(), DEMO_SEED, HARD_MODE);
         for (RawSignal s : signals) {
             System.out.printf(
                     "[owner=%s src=%-15s type=%-16s at=%s] \"%s\" @ \"%s\"%n",

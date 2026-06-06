@@ -35,6 +35,11 @@ class ResolutionAccuracyIntegrationTest {
     private static final Clock FIXED =
             Clock.fixed(Instant.parse("2026-06-01T12:00:00Z"), ZoneOffset.UTC);
 
+    // Demo toggle: flip to true to watch resolution drop below 1.0 (nickname owners split
+    // into multiple clusters, lowering recall) and this test go RED. Keep false in the repo.
+    private static final boolean HARD_MODE = false;
+    private static final long DEMO_SEED = 3L;
+
     private final NameNormalizer nameNormalizer = new NameNormalizer();
     private final AddressNormalizer addressNormalizer = new AddressNormalizer();
     private final ResolutionService service =
@@ -55,6 +60,19 @@ class ResolutionAccuracyIntegrationTest {
         }
 
         ResolutionMetrics m = service.evaluate(service.resolve(clean));
+
+        assertThat(m.precision()).isEqualTo(1.0);
+        assertThat(m.recall()).isEqualTo(1.0);
+    }
+
+    @Test
+    void demoDatasetResolvesPerfectlyUntilHardModeIsEnabled() {
+        // With HARD_MODE off the demo data resolves perfectly. Flipping HARD_MODE to true
+        // injects nicknames the resolver can't reunite, so recall falls and this assertion
+        // fails — the live demonstration of where the rules-based v1 breaks.
+        List<RawSignal> signals = generator.generate(DEMO_SEED, OWNERS, SIGNALS_PER_OWNER, HARD_MODE);
+
+        ResolutionMetrics m = service.evaluate(service.resolve(signals));
 
         assertThat(m.precision()).isEqualTo(1.0);
         assertThat(m.recall()).isEqualTo(1.0);
