@@ -5,20 +5,24 @@ import com.harbinger.model.EnrichedHomeowner;
 import com.harbinger.model.RawSignal;
 import com.harbinger.service.SignalGeneratorService;
 import com.harbinger.service.enrich.EnrichmentService;
+import com.harbinger.service.pipeline.RealtimeLeadService;
 import com.harbinger.service.resolution.ResolutionMetrics;
 import com.harbinger.service.resolution.ResolvedCluster;
 import com.harbinger.service.resolution.ResolutionService;
 import com.harbinger.service.scoring.Score;
 import com.harbinger.service.scoring.ScoringService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 /**
- * Phase 1 "done" check: on {@code ./mvnw spring-boot:run}, print a deterministic
- * stream of labeled messy signals. Pure presentation glue — all logic lives in
- * (and is tested via) {@link SignalGeneratorService}; this class is excluded from
- * the coverage gate, like the application entry point.
+ * Demo glue for {@code ./mvnw spring-boot:run}: prints each pipeline stage end to end
+ * (Phases 1–6), then — unless {@code harbinger.demo.realtime=false} — replays the same
+ * signals through {@link RealtimeLeadService} on a paced background thread so the
+ * Phase 7 SSE stream comes alive (try {@code curl -N localhost:8080/api/v1/stream}).
+ * Pure presentation glue — all logic lives in (and is tested via) the services; this
+ * class is excluded from the coverage gate, like the application entry point.
  */
 @Component
 public class DemoRunner implements CommandLineRunner {
@@ -31,23 +35,32 @@ public class DemoRunner implements CommandLineRunner {
     // recall/F1 fall below 1.0 — a live look at where the rules-based v1 breaks.
     private static final boolean HARD_MODE = false;
 
+    /** Delay between signals in the realtime replay, so leads visibly trickle in over SSE. */
+    private static final long FEED_DELAY_MS = 300L;
+
     private final SignalGeneratorService generator;
     private final ResolutionService resolutionService;
     private final EnrichmentService enrichmentService;
     private final ScoringService scoringService;
     private final LlmProvider llmProvider;
+    private final RealtimeLeadService realtimeLeadService;
+    private final boolean realtimeEnabled;
 
     public DemoRunner(
             SignalGeneratorService generator,
             ResolutionService resolutionService,
             EnrichmentService enrichmentService,
             ScoringService scoringService,
-            LlmProvider llmProvider) {
+            LlmProvider llmProvider,
+            RealtimeLeadService realtimeLeadService,
+            @Value("${harbinger.demo.realtime:true}") boolean realtimeEnabled) {
         this.generator = generator;
         this.resolutionService = resolutionService;
         this.enrichmentService = enrichmentService;
         this.scoringService = scoringService;
         this.llmProvider = llmProvider;
+        this.realtimeLeadService = realtimeLeadService;
+        this.realtimeEnabled = realtimeEnabled;
     }
 
     @Override
@@ -99,5 +112,37 @@ public class DemoRunner implements CommandLineRunner {
             // default MockLlmProvider builds this deterministically; no API key or network.
             System.out.printf("  why: %s%n", llmProvider.explain(score));
         }
+
+        if (realtimeEnabled) {
+            startRealtimeFeed(signals);
+        }
+    }
+
+    /**
+     * Phase 7: replay the signals one at a time through the orchestrator on a daemon thread,
+     * printing each lead as it crosses HOT. The same surfacings publish to SSE subscribers, so
+     * the running server shows leads appear live. Off in tests via {@code harbinger.demo.realtime}.
+     */
+    private void startRealtimeFeed(List<RawSignal> signals) {
+        System.out.printf(
+                "Realtime feed starting (%d signals, %dms apart) — try: "
+                        + "curl -N localhost:8080/api/v1/stream%n",
+                signals.size(), FEED_DELAY_MS);
+        Thread feeder = new Thread(() -> {
+            for (RawSignal signal : signals) {
+                realtimeLeadService.ingest(signal).ifPresent(lead -> System.out.printf(
+                        "SURFACED \"%s\" @ \"%s\" | score=%d tier=%s in %dms | %s%n",
+                        lead.homeowner().name(), lead.homeowner().address(),
+                        lead.intentScore(), lead.tier(), lead.signalToLeadMs(), lead.explanation()));
+                try {
+                    Thread.sleep(FEED_DELAY_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        }, "demo-realtime-feeder");
+        feeder.setDaemon(true);
+        feeder.start();
     }
 }

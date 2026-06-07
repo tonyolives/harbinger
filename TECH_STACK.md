@@ -29,8 +29,8 @@ Simple reference for me and any AI agent working on this repo. This is the allow
 
 | Tech | Status | Why |
 |---|---|---|
-| In-memory repositories | Planned | No database needed for the demo; deterministic and easy to replace later |
-| `ConcurrentHashMap` behind interfaces | Planned | Simple thread-safe storage for the in-process pipeline |
+| In-memory repositories | Done (Phase 7) | No database needed for the demo; deterministic and easy to replace later (`LeadRepository`) |
+| `ConcurrentHashMap` behind interfaces | Done (Phase 7) | Simple thread-safe storage for the in-process pipeline (`InMemoryLeadRepository`) |
 
 ## LLM
 
