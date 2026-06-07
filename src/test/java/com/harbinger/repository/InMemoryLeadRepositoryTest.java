@@ -64,10 +64,23 @@ class InMemoryLeadRepositoryTest {
     }
 
     @Test
+    void deleteByIdRemovesTheLead() {
+        Lead saved = lead("john smith", 80, Tier.HOT, Instant.parse("2026-06-06T00:00:00Z"));
+        repository.save(saved);
+
+        repository.deleteById(saved.homeowner().id());
+
+        assertThat(repository.count()).isZero();
+        assertThat(repository.findById(saved.homeowner().id())).isEmpty();
+    }
+
+    @Test
     void nullArgumentsRejected() {
         assertThatThrownBy(() -> repository.save(null))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> repository.findById(null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> repository.deleteById(null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }
