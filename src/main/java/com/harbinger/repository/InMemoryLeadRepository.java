@@ -47,6 +47,14 @@ public class InMemoryLeadRepository implements LeadRepository {
     }
 
     @Override
+    public void deleteById(UUID homeownerId) {
+        if (homeownerId == null) {
+            throw new IllegalArgumentException("homeownerId must not be null");
+        }
+        leads.remove(homeownerId);
+    }
+
+    @Override
     public int count() {
         return leads.size();
     }

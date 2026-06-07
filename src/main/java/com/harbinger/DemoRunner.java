@@ -130,10 +130,12 @@ public class DemoRunner implements CommandLineRunner {
                 signals.size(), FEED_DELAY_MS);
         Thread feeder = new Thread(() -> {
             for (RawSignal signal : signals) {
-                realtimeLeadService.ingest(signal).ifPresent(lead -> System.out.printf(
-                        "SURFACED \"%s\" @ \"%s\" | score=%d tier=%s in %dms | %s%n",
-                        lead.homeowner().name(), lead.homeowner().address(),
-                        lead.intentScore(), lead.tier(), lead.signalToLeadMs(), lead.explanation()));
+                for (com.harbinger.model.Lead lead : realtimeLeadService.ingest(signal)) {
+                    System.out.printf(
+                            "LEAD \"%s\" @ \"%s\" | score=%d tier=%s in %dms | %s%n",
+                            lead.homeowner().name(), lead.homeowner().address(),
+                            lead.intentScore(), lead.tier(), lead.signalToLeadMs(), lead.explanation());
+                }
                 try {
                     Thread.sleep(FEED_DELAY_MS);
                 } catch (InterruptedException e) {

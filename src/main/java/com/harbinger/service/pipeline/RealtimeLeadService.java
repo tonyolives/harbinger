@@ -21,16 +21,19 @@ import org.springframework.stereotype.Service;
 
 /**
  * The real-time loop. Signals arrive one at a time via {@link #ingest}; each arrival re-runs the
- * {@link SignalPipeline} over every signal seen so far and watches for a homeowner crossing into
- * the HOT tier. The first time a homeowner is HOT, exactly one {@link Lead} is surfaced —
- * explained (one LLM call), stored, and published — and the {@code signalToLeadMs} north-star
- * metric is measured from the signal's arrival to that moment.
+ * {@link SignalPipeline} over every signal seen so far and turns each resolved homeowner into a
+ * live {@link Lead} row. A homeowner's lead is created the first time it is scored (at whatever
+ * tier) and updated in place as more signals arrive; HOT leads rank to the top. The
+ * {@code signalToLeadMs} north-star metric is measured from the triggering signal's arrival to
+ * the moment the lead first surfaces.
  *
  * <p>Re-running the whole batch each tick keeps the existing pure services (resolution, scoring)
- * reused verbatim; it's O(n²) but trivial at demo scale. Already-surfaced homeowners are refreshed
- * in place (score/tier/reasons) so {@code /leads} stays current, but they never re-alert and never
- * trigger a second LLM call — the explanation, latency, and surfaced-at time are kept from the
- * first crossing.
+ * reused verbatim; it's O(n²) but trivial at demo scale. An existing lead is only rewritten —
+ * and only then re-published and re-explained — when its rounded score or its reasons actually
+ * change, so the badge and the explanation always agree and steady-state ticks cost nothing.
+ * The explanation is regenerated on every such change (one LLM call per change: free for the
+ * default Mock provider, bounded for the opt-in Claude path); latency and surfaced-at are kept
+ * from first surfacing.
  *
  * <p>Homeowner identity is the resolution cluster id. A stable cross-tick entity id is a v2
  * concern; at demo scale (unique addresses, representative names that stabilize immediately) the
@@ -47,7 +50,6 @@ public class RealtimeLeadService {
     private final Clock clock;
 
     private final List<RawSignal> signals = new ArrayList<>();
-    private final Set<UUID> surfaced = new HashSet<>();
     private Map<Tier, Long> tierCounts = new EnumMap<>(Tier.class);
     private int signalsProcessed = 0;
 
@@ -67,9 +69,9 @@ public class RealtimeLeadService {
     /**
      * Feed one signal through the pipeline.
      *
-     * @return the lead surfaced by this signal (a homeowner crossing into HOT), or empty if none
+     * @return the leads created or updated by this signal (empty when nothing changed)
      */
-    public synchronized Optional<Lead> ingest(RawSignal signal) {
+    public synchronized List<Lead> ingest(RawSignal signal) {
         if (signal == null) {
             throw new IllegalArgumentException("signal must not be null");
         }
@@ -80,41 +82,68 @@ public class RealtimeLeadService {
 
         List<ScoredHomeowner> scored = pipeline.score(signals);
 
-        // One "now" for everything surfaced on this tick, so signalToLeadMs is measured once.
+        // One "now" for everything touched on this tick, so signalToLeadMs is measured once.
         Instant surfaceTime = clock.instant();
         long signalToLeadMs = Duration.between(arrival, surfaceTime).toMillis();
 
-        Optional<Lead> surfacedLead = Optional.empty();
+        List<Lead> touched = new ArrayList<>();
         Map<Tier, Long> counts = new EnumMap<>(Tier.class);
+        Set<UUID> currentIds = new HashSet<>();
         for (ScoredHomeowner sh : scored) {
-            UUID id = sh.homeowner().id();
             Score score = sh.score();
             counts.merge(score.tier(), 1L, Long::sum);
+            currentIds.add(sh.homeowner().id());
 
-            if (!surfaced.contains(id)) {
-                if (score.tier() == Tier.HOT) {
-                    surfaced.add(id);
-                    String explanation = llmProvider.explain(score);
-                    Lead lead = new Lead(
-                            sh.homeowner(), score.value(), score.tier(), score.reasons(),
-                            explanation, signalToLeadMs, surfaceTime);
-                    repository.save(lead);
-                    publisher.publish(lead);
-                    surfacedLead = Optional.of(lead);
-                }
-            } else {
-                refreshSurfacedLead(sh, score);
+            Optional<Lead> existing = repository.findById(sh.homeowner().id());
+            if (existing.isEmpty()) {
+                touched.add(surface(sh, score, signalToLeadMs, surfaceTime));
+            } else if (changed(existing.get(), score)) {
+                touched.add(refresh(sh, score, existing.get()));
             }
         }
+        pruneDriftedLeads(currentIds);
         tierCounts = counts;
-        return surfacedLead;
+        return touched;
     }
 
-    /** Update an already-surfaced lead's score/tier/reasons; keep its explanation, latency, time. */
-    private void refreshSurfacedLead(ScoredHomeowner sh, Score score) {
-        repository.findById(sh.homeowner().id()).ifPresent(existing -> repository.save(new Lead(
+    /**
+     * Drop any stored lead whose homeowner id is no longer produced by the current resolution.
+     * As more signals arrive, a homeowner's cluster id can change (e.g. "J Pollich" consolidates
+     * into "Jean Pollich"); pruning keeps one row per current homeowner instead of leaving the
+     * earlier, tentative identity behind. Clients learn the new state by re-reading {@code /leads}
+     * after the accompanying {@code lead} event.
+     */
+    private void pruneDriftedLeads(Set<UUID> currentIds) {
+        for (Lead stored : repository.findAllRanked()) {
+            if (!currentIds.contains(stored.homeowner().id())) {
+                repository.deleteById(stored.homeowner().id());
+            }
+        }
+    }
+
+    /** First time we see a homeowner: create its lead at the current tier, explain, publish. */
+    private Lead surface(ScoredHomeowner sh, Score score, long signalToLeadMs, Instant surfaceTime) {
+        Lead lead = new Lead(
                 sh.homeowner(), score.value(), score.tier(), score.reasons(),
-                existing.explanation(), existing.signalToLeadMs(), existing.surfacedAt())));
+                llmProvider.explain(score), signalToLeadMs, surfaceTime);
+        repository.save(lead);
+        publisher.publish(lead);
+        return lead;
+    }
+
+    /** Score or reasons changed: rewrite with a fresh explanation, keep latency + surfaced-at. */
+    private Lead refresh(ScoredHomeowner sh, Score score, Lead existing) {
+        Lead lead = new Lead(
+                sh.homeowner(), score.value(), score.tier(), score.reasons(),
+                llmProvider.explain(score), existing.signalToLeadMs(), existing.surfacedAt());
+        repository.save(lead);
+        publisher.publish(lead);
+        return lead;
+    }
+
+    /** A stored lead is stale when its rounded score or its reasons no longer match the latest. */
+    private static boolean changed(Lead existing, Score score) {
+        return existing.intentScore() != score.value() || !existing.reasons().equals(score.reasons());
     }
 
     /** Total signals fed in so far. */
@@ -122,9 +151,9 @@ public class RealtimeLeadService {
         return signalsProcessed;
     }
 
-    /** Number of homeowners that have been surfaced as leads. */
+    /** Number of homeowners surfaced as leads (one row per homeowner). */
     public synchronized int leadsSurfaced() {
-        return surfaced.size();
+        return repository.count();
     }
 
     /** Current count of homeowners in each tier (from the latest pass). */

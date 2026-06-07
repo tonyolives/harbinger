@@ -31,8 +31,10 @@ class BenchmarkRunnerTest {
     }
 
     @Test
-    void oneLeadSurfacesPerHotHomeowner() {
-        assertThat(report.leadsSurfaced()).isEqualTo((int) report.hotCount());
+    void oneLeadRowPerResolvedHomeowner() {
+        // Every homeowner becomes a live lead row (all tiers), so leads == resolved homeowners.
+        assertThat(report.leadsSurfaced()).isEqualTo(report.resolvedHomeowners());
+        assertThat(report.leadsSurfaced()).isEqualTo(8);
     }
 
     @Test

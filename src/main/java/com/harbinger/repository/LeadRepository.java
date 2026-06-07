@@ -22,6 +22,9 @@ public interface LeadRepository {
     /** All leads, strongest first (score desc, then most-recently surfaced). */
     List<Lead> findAllRanked();
 
+    /** Remove the lead for a homeowner (used when a homeowner's resolved id changes). */
+    void deleteById(UUID homeownerId);
+
     /** Number of stored leads. */
     int count();
 }

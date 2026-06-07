@@ -2,6 +2,7 @@ package com.harbinger.service.pipeline;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,15 +24,14 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Proves the realtime-loop behavior: a homeowner crossing HOT surfaces exactly one lead and
- * fires exactly one publish (no re-alert on later signals), the north-star {@code signalToLeadMs}
- * is measured against the orchestrator's clock, the surfaced lead carries the LLM explanation,
- * and leads come back ranked. Scoring uses its own fixed clock so it never consumes the
+ * Proves the realtime-loop behavior: every homeowner becomes a live lead row on its first signal
+ * (at whatever tier), rows update in place as the score climbs with the explanation kept in sync,
+ * unchanged homeowners aren't re-published, the north-star {@code signalToLeadMs} is measured at
+ * surfacing, and leads come back ranked. Scoring uses its own fixed clock so it never consumes the
  * orchestrator's stepping clock.
  */
 class RealtimeLeadServiceTest {
@@ -66,55 +66,52 @@ class RealtimeLeadServiceTest {
     }
 
     @Test
-    void crossingHotSurfacesExactlyOneLeadAndAlertsOnce() {
-        // Below threshold first, then crosses HOT, then more signals while already HOT.
-        assertThat(service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE)))
-                .isEmpty(); // 45 → WARM, no surface
+    void firstSignalCreatesARowAtItsTierAndPublishesOnce() {
+        List<Lead> touched = service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE));
 
-        Optional<Lead> surfaced =
-                service.ingest(signal("J. Smith", "123 Main St", SignalType.TAX_DELINQUENCY));
-        assertThat(surfaced).isPresent(); // 75 → HOT, surfaces
-
-        // Already HOT: more signals must not re-alert.
-        assertThat(service.ingest(signal("John Smith", "123 Main St", SignalType.EVICTION)))
-                .isEmpty();
-
-        verify(publisher, times(1)).publish(surfaced.orElseThrow());
+        assertThat(touched).hasSize(1);
+        assertThat(touched.get(0).tier()).isEqualTo(Tier.WARM); // 45 → WARM, still a row
         assertThat(repository.count()).isEqualTo(1);
         assertThat(service.leadsSurfaced()).isEqualTo(1);
-        assertThat(service.signalsProcessed()).isEqualTo(3);
+        verify(publisher, times(1)).publish(any(Lead.class));
     }
 
     @Test
-    void surfacedLeadIsHotCarriesExplanationAndMeasuredLatency() {
-        service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE));
-        Lead lead = service.ingest(signal("John Smith", "123 Main St", SignalType.TAX_DELINQUENCY))
-                .orElseThrow();
+    void crossingToHotUpdatesTheSameRowAndRepublishes() {
+        service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE)); // WARM 45
+        List<Lead> touched =
+                service.ingest(signal("J. Smith", "123 Main St", SignalType.TAX_DELINQUENCY)); // → HOT 75
 
+        assertThat(touched).hasSize(1);
+        assertThat(repository.count()).isEqualTo(1); // same homeowner, updated in place
+        Lead lead = repository.findById(touched.get(0).homeowner().id()).orElseThrow();
         assertThat(lead.tier()).isEqualTo(Tier.HOT);
         assertThat(lead.intentScore()).isEqualTo(75);
-        assertThat(lead.explanation()).isNotBlank().contains("Pre-foreclosure filing");
-        // Within one ingest the stepping clock advances once: arrival → surface = STEP_MS.
-        assertThat(lead.signalToLeadMs()).isEqualTo(STEP_MS);
+        verify(publisher, times(2)).publish(any(Lead.class)); // create + update
     }
 
     @Test
-    void alreadyHotLeadIsRefreshedInPlaceWithoutReAlerting() {
-        service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE));
-        Lead first = service.ingest(signal("John Smith", "123 Main St", SignalType.TAX_DELINQUENCY))
-                .orElseThrow();
-        // A further signal raises the score; the stored lead updates but doesn't re-alert.
-        service.ingest(signal("John Smith", "123 Main St", SignalType.PROBATE));
+    void explanationStaysConsistentWithTheUpdatedScore() {
+        service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE)); // WARM 45
+        service.ingest(signal("John Smith", "123 Main St", SignalType.TAX_DELINQUENCY)); // HOT 75
 
-        Lead refreshed = repository.findById(first.homeowner().id()).orElseThrow();
-        assertThat(refreshed.intentScore()).isGreaterThan(first.intentScore());
-        assertThat(refreshed.surfacedAt()).isEqualTo(first.surfacedAt()); // kept from first crossing
-        verify(publisher, times(1)).publish(first);
+        Lead lead = repository.findAllRanked().get(0);
+        // The explanation must reflect the *current* score/tier, not the surfacing-time text.
+        assertThat(lead.explanation()).contains("HOT").contains("score 75");
+    }
+
+    @Test
+    void unchangedHomeownerIsNotRepublished() {
+        Lead leadA = service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE)).get(0);
+        // A different homeowner arrives; A is re-scored but unchanged, so it must not republish.
+        service.ingest(signal("Dana Jones", "9 Oak Ave", SignalType.EVICTION));
+
+        verify(publisher, times(1)).publish(leadA);
+        assertThat(repository.count()).isEqualTo(2);
     }
 
     @Test
     void leadsComeBackRanked() {
-        // Owner B reaches 80, owner A reaches 75 → B ranks first.
         service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE));
         service.ingest(signal("John Smith", "123 Main St", SignalType.TAX_DELINQUENCY)); // A = 75 HOT
         service.ingest(signal("Dana Jones", "9 Oak Ave", SignalType.PROBATE));
@@ -124,6 +121,24 @@ class RealtimeLeadServiceTest {
         assertThat(ranked).hasSize(2);
         assertThat(ranked.get(0).intentScore()).isEqualTo(80);
         assertThat(ranked.get(1).intentScore()).isEqualTo(75);
+    }
+
+    @Test
+    void signalToLeadMsMeasuredAtSurfacing() {
+        Lead lead = service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE)).get(0);
+        // Within one ingest the stepping clock advances once: arrival → surface = STEP_MS.
+        assertThat(lead.signalToLeadMs()).isEqualTo(STEP_MS);
+    }
+
+    @Test
+    void consolidatesWhenAHomeownerIdDriftsToAFullerName() {
+        // An initial-only name, then the full name at the same address: the resolved id changes,
+        // so the tentative earlier row is pruned and exactly one lead remains.
+        service.ingest(signal("J Pollich", "61338 Labadie Manor", SignalType.PROBATE));
+        service.ingest(signal("Jean Pollich", "61338 Labadie Manor", SignalType.PRE_FORECLOSURE));
+
+        assertThat(repository.count()).isEqualTo(1);
+        assertThat(repository.findAllRanked().get(0).homeowner().name()).isEqualTo("jean pollich");
     }
 
     @Test

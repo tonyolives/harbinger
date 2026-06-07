@@ -10,9 +10,9 @@
   "hotCount" : 6,
   "warmCount" : 2,
   "coldCount" : 0,
-  "leadsSurfaced" : 6,
+  "leadsSurfaced" : 8,
   "signalToLeadP50Ms" : 0,
-  "signalToLeadP95Ms" : 0,
-  "throughputSignalsPerSec" : 5074.26396744014,
-  "generatedAt" : "2026-06-07T08:06:32.490957Z"
+  "signalToLeadP95Ms" : 6,
+  "throughputSignalsPerSec" : 2688.8936591854176,
+  "generatedAt" : "2026-06-07T09:29:43.662051Z"
 }
