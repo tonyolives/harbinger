@@ -46,9 +46,10 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 - Build: `LlmProvider` interface + `MockLlmProvider` (default) + `ClaudeLlmProvider` (opt-in, RestClient).
 - Done: new `com.harbinger.llm` package. `MockLlmProvider` (`@Service`, default) builds a deterministic, tier-aware ≤2-sentence explanation from `Score.reasons()`; `ClaudeLlmProvider` (`@Primary @ConditionalOnProperty` on `anthropic.api-key`, Spring `RestClient`) calls the Claude Messages API (`claude-haiku-4-5`) only when `ANTHROPIC_API_KEY` is set. Tests use Mockito + `MockRestServiceServer` (no network); wiring proven with `ApplicationContextRunner`. Documented in `docs/EXPLANATIONS.md`.
 
-**Phase 7 — Real-time loop + API** · `feature/realtime-api`
+**Phase 7 — Real-time loop + API** · `feature/realtime-api` — Done
 - Tests: a homeowner crossing HOT fires exactly one alert and a lead with `signalToLeadMs` measured (inject `Clock`); leads stay ranked; `GET /api/v1/leads`, `/leads/{id}`, `/metrics`, and SSE `/stream` behave (MockMvc).
 - Build: `SignalPipeline` + orchestrator driving the stream; `LeadController` + `SseEmitter`; DTOs; `@ControllerAdvice`; CORS for `:5173`.
+- Done: `Lead` gained an `explanation` field. New `service.pipeline` (`SignalPipeline` resolve→score, `RealtimeLeadService.ingest` — re-runs the batch over accumulated signals, surfaces one lead per HOT crossing with `signalToLeadMs` from an injected `Clock`, explains once, refreshes-in-place without re-alerting); in-memory `LeadRepository`; `controller` (`LeadController` at `/api/v1` with leads/{id}/metrics + SSE `/stream`, `SseLeadEventPublisher`, `GlobalExceptionHandler`); `dto` (`LeadDto`/`MetricsDto`/`LeadMapper`); CORS for `:5173`. `DemoRunner` replays signals on a paced thread to drive live SSE (off via `harbinger.demo.realtime=false`).
 
 **Phase 8 — Benchmark, UI, ship** · `feature/bench-ui-docs`
 - Bench: fixed-seed run writes `benchmarks/report.json` + a chart PNG (XChart): resolution F1, tier counts, signal-to-lead p50/p95, throughput.
