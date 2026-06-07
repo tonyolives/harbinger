@@ -37,8 +37,8 @@ public record MetricsDto(
                 percentile(latenciesMs, 95));
     }
 
-    /** Nearest-rank percentile; 0 for an empty sample. */
-    static long percentile(List<Long> values, int p) {
+    /** Nearest-rank percentile; 0 for an empty sample. Shared with the benchmark. */
+    public static long percentile(List<Long> values, int p) {
         if (values == null || values.isEmpty()) {
             return 0L;
         }

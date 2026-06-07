@@ -69,7 +69,8 @@ Not installed yet. These are allowed when Phase 8 starts.
 | Gitflow | In use | `main`, `develop`, and one `feature/*` branch per phase |
 | Conventional Commits | In use | Clean, readable history |
 | Maven wrapper | In use | Reproducible Maven command without relying on a global install |
-| Makefile | Planned | Shortcuts for `make bench` and demo commands |
+| `exec-maven-plugin` | In `pom.xml` (Phase 8) | Runs the benchmark `main` headless (`make bench`) without booting the web app |
+| Makefile | In use (Phase 8) | Shortcuts: `make bench`, `make test`, `make run` |
 | GitHub Actions | Planned | CI for `./mvnw verify` and frontend tests after the UI exists |
 
 ## Not Using
