@@ -16,7 +16,8 @@ class LeadTest {
             new Homeowner(UUID.randomUUID(), "John Smith", "123 Main Street");
 
     private static Lead lead(int score, Tier tier) {
-        return new Lead(OWNER, score, tier, List.of("pre-foreclosure filed"), 42L, SURFACED);
+        return new Lead(
+                OWNER, score, tier, List.of("pre-foreclosure filed"), "why this lead", 42L, SURFACED);
     }
 
     @Test
@@ -27,6 +28,7 @@ class LeadTest {
         assertThat(lead.intentScore()).isEqualTo(80);
         assertThat(lead.tier()).isEqualTo(Tier.HOT);
         assertThat(lead.reasons()).containsExactly("pre-foreclosure filed");
+        assertThat(lead.explanation()).isEqualTo("why this lead");
         assertThat(lead.signalToLeadMs()).isEqualTo(42L);
         assertThat(lead.surfacedAt()).isEqualTo(SURFACED);
     }
@@ -42,7 +44,7 @@ class LeadTest {
     void reasonsAreCopiedAndUnmodifiable() {
         List<String> mutable = new ArrayList<>();
         mutable.add("probate filed");
-        Lead lead = new Lead(OWNER, 70, Tier.WARM, mutable, 5L, SURFACED);
+        Lead lead = new Lead(OWNER, 70, Tier.WARM, mutable, "why this lead", 5L, SURFACED);
 
         // Mutating the source list must not affect the stored reasons.
         mutable.add("tax delinquency");
@@ -54,50 +56,57 @@ class LeadTest {
 
     @Test
     void rejectsNullHomeowner() {
-        assertThatThrownBy(() -> new Lead(null, 50, Tier.WARM, List.of(), 1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(null, 50, Tier.WARM, List.of(), "why this lead", 1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("homeowner");
     }
 
     @Test
     void rejectsScoreBelowZero() {
-        assertThatThrownBy(() -> new Lead(OWNER, -1, Tier.WARM, List.of(), 1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(OWNER, -1, Tier.WARM, List.of(), "why this lead", 1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("intentScore");
     }
 
     @Test
     void rejectsScoreAboveHundred() {
-        assertThatThrownBy(() -> new Lead(OWNER, 101, Tier.WARM, List.of(), 1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(OWNER, 101, Tier.WARM, List.of(), "why this lead", 1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("intentScore");
     }
 
     @Test
     void rejectsNullTier() {
-        assertThatThrownBy(() -> new Lead(OWNER, 50, null, List.of(), 1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(OWNER, 50, null, List.of(), "why this lead", 1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("tier");
     }
 
     @Test
     void rejectsNullReasons() {
-        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, null, 1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, null, "why this lead", 1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("reasons");
     }
 
     @Test
     void rejectsNegativeLatency() {
-        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, List.of(), -1L, SURFACED))
+        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, List.of(), "why this lead", -1L, SURFACED))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("signalToLeadMs");
     }
 
     @Test
     void rejectsNullSurfacedAt() {
-        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, List.of(), 1L, null))
+        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, List.of(), "why this lead", 1L, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("surfacedAt");
+    }
+
+    @Test
+    void rejectsBlankExplanation() {
+        assertThatThrownBy(() -> new Lead(OWNER, 50, Tier.WARM, List.of(), "  ", 1L, SURFACED))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("explanation");
     }
 }
