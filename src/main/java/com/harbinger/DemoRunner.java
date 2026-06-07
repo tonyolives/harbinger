@@ -1,5 +1,6 @@
 package com.harbinger;
 
+import com.harbinger.llm.LlmProvider;
 import com.harbinger.model.EnrichedHomeowner;
 import com.harbinger.model.RawSignal;
 import com.harbinger.service.SignalGeneratorService;
@@ -34,16 +35,19 @@ public class DemoRunner implements CommandLineRunner {
     private final ResolutionService resolutionService;
     private final EnrichmentService enrichmentService;
     private final ScoringService scoringService;
+    private final LlmProvider llmProvider;
 
     public DemoRunner(
             SignalGeneratorService generator,
             ResolutionService resolutionService,
             EnrichmentService enrichmentService,
-            ScoringService scoringService) {
+            ScoringService scoringService,
+            LlmProvider llmProvider) {
         this.generator = generator;
         this.resolutionService = resolutionService;
         this.enrichmentService = enrichmentService;
         this.scoringService = scoringService;
+        this.llmProvider = llmProvider;
     }
 
     @Override
@@ -91,6 +95,9 @@ public class DemoRunner implements CommandLineRunner {
                     "Scored \"%s\" @ \"%s\" | score=%d tier=%-4s | top reason: %s%n",
                     cluster.homeowner().name(), cluster.homeowner().address(),
                     score.value(), score.tier(), topReason);
+            // Phase 6: turn the score's reasons into a short "why this lead" explanation. The
+            // default MockLlmProvider builds this deterministically; no API key or network.
+            System.out.printf("  why: %s%n", llmProvider.explain(score));
         }
     }
 }

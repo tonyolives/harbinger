@@ -36,9 +36,9 @@ Simple reference for me and any AI agent working on this repo. This is the allow
 
 | Tech | Status | Why |
 |---|---|---|
-| `LlmProvider` interface | Phase 6 | Keeps explanation generation decoupled from the pipeline |
-| `MockLlmProvider` | Phase 6 default | Deterministic templates; no API key and no test network |
-| `ClaudeLlmProvider` | Phase 6 opt-in | Uses Spring `RestClient` only when `ANTHROPIC_API_KEY` is set |
+| `LlmProvider` interface | Done (Phase 6) | Keeps explanation generation decoupled from the pipeline |
+| `MockLlmProvider` | Done (Phase 6 default) | Deterministic templates; no API key and no test network |
+| `ClaudeLlmProvider` | Done (Phase 6 opt-in) | Uses Spring `RestClient` only when `ANTHROPIC_API_KEY` is set |
 
 ## Testing
 
