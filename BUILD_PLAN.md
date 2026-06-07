@@ -49,12 +49,13 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 **Phase 7 — Real-time loop + API** · `feature/realtime-api` — Done
 - Tests: a homeowner crossing HOT fires exactly one alert and a lead with `signalToLeadMs` measured (inject `Clock`); leads stay ranked; `GET /api/v1/leads`, `/leads/{id}`, `/metrics`, and SSE `/stream` behave (MockMvc).
 - Build: `SignalPipeline` + orchestrator driving the stream; `LeadController` + `SseEmitter`; DTOs; `@ControllerAdvice`; CORS for `:5173`.
-- Done: `Lead` gained an `explanation` field. New `service.pipeline` (`SignalPipeline` resolve→score, `RealtimeLeadService.ingest` — re-runs the batch over accumulated signals, surfaces one lead per HOT crossing with `signalToLeadMs` from an injected `Clock`, explains once, refreshes-in-place without re-alerting); in-memory `LeadRepository`; `controller` (`LeadController` at `/api/v1` with leads/{id}/metrics + SSE `/stream`, `SseLeadEventPublisher`, `GlobalExceptionHandler`); `dto` (`LeadDto`/`MetricsDto`/`LeadMapper`); CORS for `:5173`. `DemoRunner` replays signals on a paced thread to drive live SSE (off via `harbinger.demo.realtime=false`).
+- Done: `Lead` gained an `explanation` field. New `service.pipeline` (`SignalPipeline` resolve→score, `RealtimeLeadService.ingest` — re-runs the batch over accumulated signals, turns each resolved homeowner into a live lead row with `signalToLeadMs` from an injected `Clock`, updates/re-explains a row only when its score or reasons change, and prunes rows whose resolved id drifts); in-memory `LeadRepository`; `controller` (`LeadController` at `/api/v1` with leads/{id}/metrics + SSE `/stream`, `SseLeadEventPublisher`, `GlobalExceptionHandler`); `dto` (`LeadDto`/`MetricsDto`/`LeadMapper`); CORS for `:5173`. `DemoRunner` replays signals on a paced thread to drive live SSE (off via `harbinger.demo.realtime=false`).
 
-**Phase 8 — Benchmark, UI, ship** · `feature/bench-ui-docs`
+**Phase 8 — Benchmark, UI, ship** · `feature/bench-ui-docs` — Done
 - Bench: fixed-seed run writes `benchmarks/report.json` + a chart PNG (XChart): resolution F1, tier counts, signal-to-lead p50/p95, throughput.
 - UI (Jest + RTL first): React + Vite + MapLibre/deck.gl; leads colored by tier, ranked side panel, live updates via `EventSource`.
 - Docs: README with real numbers + 45-sec Loom; `docs/SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
+- Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. **Map UI (MapLibre/deck.gl) deferred to Phase 9** per scope decision (keep v1 simple); a 45-sec Loom + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
 
 ---
 

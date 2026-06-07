@@ -52,15 +52,15 @@ Simple reference for me and any AI agent working on this repo. This is the allow
 
 ## Frontend
 
-Not installed yet. These are allowed when Phase 8 starts.
+In `ui/` (plain-JS, minimal — Phase 9 will add the map and styling).
 
 | Tech | Status | Why |
 |---|---|---|
-| React 18 + Vite | Phase 8 | Fast local UI with a small component model |
-| MapLibre GL | Phase 8 | Map rendering without a Mapbox API token |
-| deck.gl | Phase 8 | Plot leads by tier and score on the map |
-| EventSource | Phase 8 | Browser-native SSE for live lead updates |
-| Jest + React Testing Library | Phase 8 | Frontend tests for UI behavior |
+| React 18 + Vite | In `ui/` (Phase 8) | Fast local UI with a small component model |
+| EventSource | In `ui/` (Phase 8) | Browser-native SSE for live lead updates |
+| Jest + React Testing Library | In `ui/` (Phase 8) | Frontend tests for UI behavior |
+| MapLibre GL | Deferred (Phase 9) | Map rendering without a Mapbox API token |
+| deck.gl | Deferred (Phase 9) | Plot leads by tier and score on the map |
 
 ## Tooling
 
