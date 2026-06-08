@@ -4,7 +4,7 @@ A real-time seller-intent pipeline: turn raw public-record signals into ranked, 
 
 **North-star metric:** signal-to-lead latency (time from a seller signal appearing to a ranked lead surfacing). Being first is the whole value.
 
-**Stack:** Spring Boot 3.2 / Java 17 / Maven · JUnit 5 + JaCoCo · React 18 + Vite + Jest. Full list and rationale in `TECH_STACK.md`. Conventions in `AGENTS.md`.
+**Stack:** Spring Boot 3.2 / Java 17 / Maven · JUnit 5 + JaCoCo · React 18 + Vite + Jest. Full list and rationale in `TECH_STACK.md`. Conventions in `../AGENTS.md`.
 
 ---
 
@@ -39,12 +39,12 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 
 **Phase 5 — Scoring** · `feature/scoring` — Done
 - Tests (pure, inject `Clock`): adding a signal never lowers score; older signal contributes less (recency decay); stacked signals score higher; tier thresholds correct; `DEED_TRANSFER` dampens.
-- Build: `ScoringService` — weighted signals + recency decay → score (0–100), tier, reasons. Returns a standalone `Score(value, tier, reasons)` record; weights centralized and documented in `docs/SCORING.md`. Capped linear weighted sum with a 60-day recency half-life; `DEED_TRANSFER` is a negative dampener.
+- Build: `ScoringService` — weighted signals + recency decay → score (0–100), tier, reasons. Returns a standalone `Score(value, tier, reasons)` record; weights centralized and documented in `SCORING.md`. Capped linear weighted sum with a 60-day recency half-life; `DEED_TRANSFER` is a negative dampener.
 
 **Phase 6 — Explanations** · `feature/explain` — Done
 - Tests (Mockito, no network): `MockLlmProvider` returns a ≤2-sentence "why this lead" from the reasons; real provider only used when `ANTHROPIC_API_KEY` set.
 - Build: `LlmProvider` interface + `MockLlmProvider` (default) + `ClaudeLlmProvider` (opt-in, RestClient).
-- Done: new `com.harbinger.llm` package. `MockLlmProvider` (`@Service`, default) builds a deterministic, tier-aware ≤2-sentence explanation from `Score.reasons()`; `ClaudeLlmProvider` (`@Primary @ConditionalOnProperty` on `anthropic.api-key`, Spring `RestClient`) calls the Claude Messages API (`claude-haiku-4-5`) only when `ANTHROPIC_API_KEY` is set. Tests use Mockito + `MockRestServiceServer` (no network); wiring proven with `ApplicationContextRunner`. Documented in `docs/EXPLANATIONS.md`.
+- Done: new `com.harbinger.llm` package. `MockLlmProvider` (`@Service`, default) builds a deterministic, tier-aware ≤2-sentence explanation from `Score.reasons()`; `ClaudeLlmProvider` (`@Primary @ConditionalOnProperty` on `anthropic.api-key`, Spring `RestClient`) calls the Claude Messages API (`claude-haiku-4-5`) only when `ANTHROPIC_API_KEY` is set. Tests use Mockito + `MockRestServiceServer` (no network); wiring proven with `ApplicationContextRunner`. Documented in `EXPLANATIONS.md`.
 
 **Phase 7 — Real-time loop + API** · `feature/realtime-api` — Done
 - Tests: a homeowner crossing HOT fires exactly one alert and a lead with `signalToLeadMs` measured (inject `Clock`); leads stay ranked; `GET /api/v1/leads`, `/leads/{id}`, `/metrics`, and SSE `/stream` behave (MockMvc).
@@ -54,7 +54,7 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 **Phase 8 — Benchmark, UI, ship** · `feature/bench-ui-docs` — Done
 - Bench: fixed-seed run writes `benchmarks/report.json` + a chart PNG (XChart): resolution F1, tier counts, signal-to-lead p50/p95, throughput.
 - UI (Jest + RTL first): React + Vite; leads ranked and colored by tier, live updates via `EventSource`.
-- Docs: README with real numbers + 45-sec Loom; `docs/SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
+- Docs: README with real numbers + 45-sec Loom; `SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
 - Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. Richer visualizations are deferred to keep v1 simple; a 45-sec Loom + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
 
 ---

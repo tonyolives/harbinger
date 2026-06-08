@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * In-memory {@link LeadRepository} backed by a {@link ConcurrentHashMap} keyed by homeowner id
- * — thread-safe storage for the in-process pipeline, no database (per {@code TECH_STACK.md}).
+ * — thread-safe storage for the in-process pipeline, no database (per {@code docs/TECH_STACK.md}).
  * Saving the same homeowner again replaces its lead, so each homeowner has exactly one live
  * lead.
  */

@@ -1,4 +1,4 @@
-# harbinger
+# Harbinger
 A real-time seller-intent pipeline that turns raw public-record signals into ranked, contactable leads — on synthetic data, built to be explainable line by line.
 
 `generate → normalize → resolve → enrich → score → explain → real-time loop + API → UI`
@@ -58,4 +58,4 @@ Signal-to-lead latency is the north-star metric — time from a signal arriving 
 - **Rules-based scoring v1** — a transparent, explainable prior, not a trained model. See `docs/SCORING.md`.
 - **Not production** — a real version needs compliance work (FCRA-adjacent data, DNC, state record-access laws).
 
-More: `PRODUCT_OVERVIEW.md` (what & why), `docs/SCORING.md` (scoring), `docs/EXPLANATIONS.md` (LLM explanations), `BUILD_PLAN.md` (phases), `TECH_STACK.md` (stack).
+More: `docs/PRODUCT_OVERVIEW.md` (what & why), `docs/SCORING.md` (scoring), `docs/EXPLANATIONS.md` (LLM explanations), `docs/BUILD_PLAN.md` (phases), `docs/TECH_STACK.md` (stack). Index: `docs/README.md`.
