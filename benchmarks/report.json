@@ -1,0 +1,18 @@
+{
+  "seed" : 2,
+  "owners" : 8,
+  "signalsPerOwner" : 6,
+  "signalCount" : 48,
+  "resolvedHomeowners" : 8,
+  "precision" : 1.0,
+  "recall" : 1.0,
+  "f1" : 1.0,
+  "hotCount" : 6,
+  "warmCount" : 2,
+  "coldCount" : 0,
+  "leadsSurfaced" : 8,
+  "signalToLeadP50Ms" : 0,
+  "signalToLeadP95Ms" : 6,
+  "throughputSignalsPerSec" : 2688.8936591854176,
+  "generatedAt" : "2026-06-07T09:29:43.662051Z"
+}
