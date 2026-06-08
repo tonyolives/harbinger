@@ -2,7 +2,7 @@
   "name": "harbinger-ui",
   "version": "0.1.0",
   "private": true,
-  "description": "Minimal live lead UI for Harbinger (Phase 8). Phase 9 adds the map + styling.",
+  "description": "Minimal live lead UI for Harbinger: a ranked, live-updating lead list (SSE).",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

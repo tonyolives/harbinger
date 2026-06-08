@@ -15,7 +15,7 @@ const lead = (id, name, score, tier) => ({
 
 test('shows an empty state when there are no leads', () => {
   render(<LeadList leads={[]} />);
-  expect(screen.getByText(/no leads yet/i)).toBeInTheDocument();
+  expect(screen.getByText(/waiting for signals/i)).toBeInTheDocument();
 });
 
 test('renders one row per lead in the given order', () => {

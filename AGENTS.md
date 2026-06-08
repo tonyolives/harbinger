@@ -6,7 +6,7 @@ Conventions for any AI coding agent working on this repo. Read this and `BUILD_P
 A real-time seller-intent pipeline (synthetic data) built as a portfolio piece for a job application. **The human author must be able to explain and defend every line in an interview.** Therefore: prefer simple, clear, conventional code over clever abstractions. When in doubt, choose the more obvious solution.
 
 ## Golden rules
-1. **Test-first.** Write failing tests (JUnit; Cucumber where `BUILD_PLAN.md` lists a scenario) before implementation. Show the human the tests before implementing if asked.
+1. **Test-first.** Write failing tests (JUnit for the backend, Jest for the UI) before implementation. Show the human the tests before implementing if asked.
 2. **One phase at a time** from `BUILD_PLAN.md`. Don't start a phase until the previous one is green.
 3. **Run `./mvnw verify` after every change.** JaCoCo line coverage ≥ 90% on touched packages.
 4. **`ScoringService` and `ResolutionService` core logic must be pure** — no I/O, no `Instant.now()`; inject `java.time.Clock`.

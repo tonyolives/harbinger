@@ -18,9 +18,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Demo glue for {@code ./mvnw spring-boot:run}: prints each pipeline stage end to end
- * (Phases 1–6), then — unless {@code harbinger.demo.realtime=false} — replays the same
- * signals through {@link RealtimeLeadService} on a paced background thread so the
- * Phase 7 SSE stream comes alive (try {@code curl -N localhost:8080/api/v1/stream}).
+ * (Phases 1–6) on boot. The live Phase 7 feed is now driven from the UI (the "Begin"
+ * button → {@code POST /api/v1/demo/start} → {@link com.harbinger.service.pipeline.DemoFeedService}),
+ * so it no longer auto-starts; set {@code harbinger.demo.realtime=true} to also replay the
+ * batch on a paced background thread at boot (try {@code curl -N localhost:8080/api/v1/stream}).
  * Pure presentation glue — all logic lives in (and is tested via) the services; this
  * class is excluded from the coverage gate, like the application entry point.
  */
@@ -53,7 +54,7 @@ public class DemoRunner implements CommandLineRunner {
             ScoringService scoringService,
             LlmProvider llmProvider,
             RealtimeLeadService realtimeLeadService,
-            @Value("${harbinger.demo.realtime:true}") boolean realtimeEnabled) {
+            @Value("${harbinger.demo.realtime:false}") boolean realtimeEnabled) {
         this.generator = generator;
         this.resolutionService = resolutionService;
         this.enrichmentService = enrichmentService;

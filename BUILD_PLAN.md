@@ -4,14 +4,14 @@ A real-time seller-intent pipeline: turn raw public-record signals into ranked, 
 
 **North-star metric:** signal-to-lead latency (time from a seller signal appearing to a ranked lead surfacing). Being first is the whole value.
 
-**Stack:** Spring Boot 3.2 / Java 17 / Maven · JUnit 5 + Cucumber + JaCoCo · React 18 + Vite. Full list and rationale in `TECH_STACK.md`. Conventions in `AGENTS.md`.
+**Stack:** Spring Boot 3.2 / Java 17 / Maven · JUnit 5 + JaCoCo · React 18 + Vite + Jest. Full list and rationale in `TECH_STACK.md`. Conventions in `AGENTS.md`.
 
 ---
 
 ## Architecture (one pipeline, mirrors ARGUS's filter pipeline)
 
 ```
-synthetic signals → normalize → resolve (dedupe to one homeowner) → enrich + mock skiptrace → score (hot/warm/cold) → [hot?] → alert + surface lead → SSE → map UI
+synthetic signals → normalize → resolve (dedupe to one homeowner) → enrich + mock skiptrace → score (hot/warm/cold) → [hot?] → alert + surface lead → SSE → list UI
 ```
 
 Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest, repository, model, dto, config, llm, bench}`. Thin controllers → services → DTOs. In-memory store (no database).
@@ -53,9 +53,9 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 
 **Phase 8 — Benchmark, UI, ship** · `feature/bench-ui-docs` — Done
 - Bench: fixed-seed run writes `benchmarks/report.json` + a chart PNG (XChart): resolution F1, tier counts, signal-to-lead p50/p95, throughput.
-- UI (Jest + RTL first): React + Vite + MapLibre/deck.gl; leads colored by tier, ranked side panel, live updates via `EventSource`.
+- UI (Jest + RTL first): React + Vite; leads ranked and colored by tier, live updates via `EventSource`.
 - Docs: README with real numbers + 45-sec Loom; `docs/SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
-- Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. **Map UI (MapLibre/deck.gl) deferred to Phase 9** per scope decision (keep v1 simple); a 45-sec Loom + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
+- Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. Richer visualizations are deferred to keep v1 simple; a 45-sec Loom + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
 
 ---
 

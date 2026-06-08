@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import App from '../App.jsx';
 
 const lead = (id, name, score, tier) => ({
@@ -61,7 +61,7 @@ afterEach(() => {
 test('loads the initial ranked leads and metrics', async () => {
   render(<App />);
   expect(await screen.findByText('owen purdy')).toBeInTheDocument();
-  expect(await screen.findByText(/signals 10/)).toBeInTheDocument();
+  expect(await screen.findByTestId('metric-signals')).toHaveTextContent('10');
 });
 
 test('a lead event triggers a refetch that shows the new ranked state', async () => {
@@ -92,4 +92,65 @@ test('refetch reflects an updated score for the same homeowner', async () => {
   const items = await screen.findAllByRole('listitem');
   expect(items).toHaveLength(1);
   expect(items[0]).toHaveTextContent('HOT 95');
+});
+
+// The last signals of a run can be no-ops (they change no lead's score or reasons), so they publish
+// no `lead` event and the client's metrics are left a step behind the backend. On completion the
+// hook must re-read the authoritative final state so the run summary's count is the true total, not
+// whatever the last event happened to carry.
+test('on idle completion, re-reads final backend state so the summary is not left stale', async () => {
+  jest.useFakeTimers();
+  try {
+    // Backend reports 46 processed during the run; the final two no-op signals land afterward, so
+    // the true total (48) only appears on a re-read — never on a `lead` event.
+    let signalsProcessedNow = 46;
+    const metricsBody = () => ({
+      signalsProcessed: signalsProcessedNow,
+      leadsSurfaced: 8,
+      hotCount: 6,
+      warmCount: 2,
+      coldCount: 0,
+      signalToLeadP50Ms: 0,
+      signalToLeadP95Ms: 6,
+    });
+    const eightLeads = Array.from({ length: 8 }, (_, i) =>
+      lead(String(i), `owner ${i}`, 100 - i, 'HOT'),
+    );
+    global.fetch = jest.fn((url) => {
+      if (url.includes('/metrics')) {
+        return Promise.resolve({ json: () => Promise.resolve(metricsBody()) });
+      }
+      if (url.includes('/demo/start')) {
+        return Promise.resolve({});
+      }
+      return Promise.resolve({ json: () => Promise.resolve(eightLeads) });
+    });
+
+    render(<App />);
+    await act(async () => {}); // flush the initial load
+
+    // Begin the feed (ControlPanel defaults: 8 owners × 6 signals = 48 expected).
+    await act(async () => {
+      fireEvent.click(screen.getByText('Begin leads'));
+    });
+
+    // A mid-run event: the client now sees 46 (< 48), so it arms the idle-completion timer.
+    await act(async () => {
+      FakeEventSource.instance.emit('lead');
+    });
+
+    // The final two no-op signals land on the backend without publishing an event.
+    signalsProcessedNow = 48;
+
+    // Idle timeout fires completion; finish() re-reads and corrects the summary to the true total.
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    await act(async () => {}); // flush the completion re-read
+
+    expect(screen.getByTestId('summary-leads')).toHaveTextContent('48 → 8');
+    expect(screen.getByTestId('summary-consolidation')).toHaveTextContent('6.0×');
+  } finally {
+    jest.useRealTimers();
+  }
 });

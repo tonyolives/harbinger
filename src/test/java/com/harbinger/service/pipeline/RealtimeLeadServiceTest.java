@@ -142,6 +142,21 @@ class RealtimeLeadServiceTest {
     }
 
     @Test
+    void resetClearsAllLiveState() {
+        service.ingest(signal("John Smith", "123 Main St", SignalType.PRE_FORECLOSURE));
+        service.ingest(signal("Dana Jones", "9 Oak Ave", SignalType.PROBATE));
+        assertThat(service.signalsProcessed()).isEqualTo(2);
+        assertThat(service.leadsSurfaced()).isEqualTo(2);
+
+        service.reset();
+
+        assertThat(service.signalsProcessed()).isZero();
+        assertThat(service.leadsSurfaced()).isZero();
+        assertThat(service.tierCounts()).isEmpty();
+        assertThat(repository.findAllRanked()).isEmpty();
+    }
+
+    @Test
     void nullSignalRejected() {
         assertThatThrownBy(() -> service.ingest(null))
                 .isInstanceOf(IllegalArgumentException.class);

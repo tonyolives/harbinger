@@ -55,6 +55,11 @@ public class InMemoryLeadRepository implements LeadRepository {
     }
 
     @Override
+    public void clear() {
+        leads.clear();
+    }
+
+    @Override
     public int count() {
         return leads.size();
     }

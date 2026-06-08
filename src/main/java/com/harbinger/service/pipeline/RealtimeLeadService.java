@@ -146,6 +146,18 @@ public class RealtimeLeadService {
         return existing.intentScore() != score.value() || !existing.reasons().equals(score.reasons());
     }
 
+    /**
+     * Clear all live state so the next run starts from empty: drop the accumulated signals, the
+     * counters, the tier breakdown, and every stored lead. Used by the demo feed when a new run is
+     * triggered (or reset) from the UI so leads don't pile up across takes.
+     */
+    public synchronized void reset() {
+        signals.clear();
+        signalsProcessed = 0;
+        tierCounts = new EnumMap<>(Tier.class);
+        repository.clear();
+    }
+
     /** Total signals fed in so far. */
     public synchronized int signalsProcessed() {
         return signalsProcessed;
