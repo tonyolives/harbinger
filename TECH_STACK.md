@@ -68,7 +68,7 @@ In `ui/` (plain-JS, intentionally minimal for v1).
 | Maven wrapper | In use | Reproducible Maven command without relying on a global install |
 | `exec-maven-plugin` | In `pom.xml` (Phase 8) | Runs the benchmark `main` headless (`make bench`) without booting the web app |
 | Makefile | In use (Phase 8) | Shortcuts: `make bench`, `make test`, `make run` |
-| GitHub Actions | In `.github/workflows/ci.yml` | Runs `./mvnw verify` on pushes and PRs to `main`/`develop` |
+| GitHub Actions | In `.github/workflows/ci.yml` | Runs `./mvnw verify` and the UI Jest suite on pushes and PRs to `main`/`develop` |
 
 ## Not Using
 
