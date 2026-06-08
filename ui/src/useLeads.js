@@ -39,16 +39,7 @@ export function useLeads() {
   const startedAtRef = useRef(0);
   const feedDelayRef = useRef(0);
   const idleTimerRef = useRef(null);
-
-  const finish = useCallback(() => {
-    if (idleTimerRef.current) {
-      clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = null;
-    }
-    setRunning(false);
-    setDone(true);
-    setElapsedMs(startedAtRef.current ? Date.now() - startedAtRef.current : 0);
-  }, []);
+  const finishingRef = useRef(false);
 
   const loadLeads = useCallback(
     () =>
@@ -66,6 +57,28 @@ export function useLeads() {
         .catch(() => {}),
     [],
   );
+
+  // Re-read the authoritative final state, then freeze the summary. The last signals to arrive can
+  // be no-ops — they don't change any lead's score or reasons, so they publish no SSE `lead` event
+  // and leave the client's metrics/leads a step behind the backend (e.g. summary stuck at 46 of 48
+  // processed). Pulling once more here makes the run summary's signal count match what the engine
+  // actually processed. `finishingRef` guards re-entry: the re-read updates `metrics`, which
+  // re-runs the completion effect before `running` flips off.
+  const finish = useCallback(() => {
+    if (finishingRef.current) {
+      return;
+    }
+    finishingRef.current = true;
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+    Promise.all([loadLeads(), loadMetrics()]).finally(() => {
+      setRunning(false);
+      setDone(true);
+      setElapsedMs(startedAtRef.current ? Date.now() - startedAtRef.current : 0);
+    });
+  }, [loadLeads, loadMetrics]);
 
   useEffect(() => {
     loadLeads();
@@ -109,6 +122,7 @@ export function useLeads() {
     setExpectedSignals((params.owners || 0) * (params.signalsPerOwner || 0));
     startedAtRef.current = Date.now();
     feedDelayRef.current = params.feedDelayMs || 0;
+    finishingRef.current = false;
     setRunning(true);
     return fetch('/api/v1/demo/start', {
       method: 'POST',
@@ -122,6 +136,7 @@ export function useLeads() {
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = null;
     }
+    finishingRef.current = false;
     setRunning(false);
     setDone(false);
     setElapsedMs(0);

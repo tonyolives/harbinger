@@ -19,7 +19,7 @@ Real-estate agents and investors win by reaching a motivated homeowner **before 
 5. **Score** — signals combine into a 0–100 intent score and a hot/warm/cold tier, with plain-language reasons.
 6. **Explain** — those reasons become a short "why this lead" sentence (a deterministic template by default; optionally the Claude API when a key is set).
 7. **Alert** — the instant a homeowner turns hot, a ranked lead is surfaced and the time-to-surface is recorded.
-8. **View** — leads appear live on a map, colored by tier.
+8. **View** — leads appear live in a ranked list, colored by tier.
 
 ## What it is NOT (deliberately honest)
 
@@ -37,7 +37,7 @@ ARGUS ingests live global event feeds and surfaces what matters in real time thr
 
 ## Tech at a glance
 
-Spring Boot 3.2 / Java 17 backend, real-time pipeline with SSE, React + map UI, fully test-driven (JUnit + Cucumber). Full rationale in `TECH_STACK.md`.
+Spring Boot 3.2 / Java 17 backend, real-time pipeline with SSE, React UI, fully test-driven (JUnit + Jest). Full rationale in `TECH_STACK.md`.
 
 ## How I'd extend it
 

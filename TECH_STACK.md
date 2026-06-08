@@ -47,20 +47,17 @@ Simple reference for me and any AI agent working on this repo. This is the allow
 | JUnit 5 | In `pom.xml` via `spring-boot-starter-test` | Unit and Spring tests |
 | Mockito | In `pom.xml` via `spring-boot-starter-test` | Mock interfaces such as `LlmProvider` and `RestClient` |
 | AssertJ | In `pom.xml` via `spring-boot-starter-test` | Readable assertions |
-| Cucumber + Gherkin | In `pom.xml` for future scenarios | Behavioral specs where the build plan calls for them |
 | JaCoCo | In `pom.xml` | Coverage reports and the 90% line coverage gate |
 
 ## Frontend
 
-In `ui/` (plain-JS, minimal — Phase 9 will add the map and styling).
+In `ui/` (plain-JS, intentionally minimal for v1).
 
 | Tech | Status | Why |
 |---|---|---|
 | React 18 + Vite | In `ui/` (Phase 8) | Fast local UI with a small component model |
 | EventSource | In `ui/` (Phase 8) | Browser-native SSE for live lead updates |
 | Jest + React Testing Library | In `ui/` (Phase 8) | Frontend tests for UI behavior |
-| MapLibre GL | Deferred (Phase 9) | Map rendering without a Mapbox API token |
-| deck.gl | Deferred (Phase 9) | Plot leads by tier and score on the map |
 
 ## Tooling
 
@@ -71,7 +68,7 @@ In `ui/` (plain-JS, minimal — Phase 9 will add the map and styling).
 | Maven wrapper | In use | Reproducible Maven command without relying on a global install |
 | `exec-maven-plugin` | In `pom.xml` (Phase 8) | Runs the benchmark `main` headless (`make bench`) without booting the web app |
 | Makefile | In use (Phase 8) | Shortcuts: `make bench`, `make test`, `make run` |
-| GitHub Actions | Planned | CI for `./mvnw verify` and frontend tests after the UI exists |
+| GitHub Actions | In `.github/workflows/ci.yml` | Runs `./mvnw verify` on pushes and PRs to `main`/`develop` |
 
 ## Not Using
 
@@ -92,7 +89,6 @@ In `ui/` (plain-JS, minimal — Phase 9 will add the map and styling).
 | Java | 17 |
 | Maven wrapper | 3.9.14 |
 | Commons Text | 1.15.0 |
-| Cucumber | 7.21.1 |
 | DataFaker | 2.5.4 |
 | JaCoCo | 0.8.14 |
 | XChart | 3.8.8 |
