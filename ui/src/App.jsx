@@ -2,9 +2,10 @@ import { useLeads } from './useLeads.js';
 import ControlPanel from './components/ControlPanel.jsx';
 import MetricsBar from './components/MetricsBar.jsx';
 import LeadList from './components/LeadList.jsx';
+import RunSummary from './components/RunSummary.jsx';
 
 export default function App() {
-  const { leads, metrics, running, start, reset } = useLeads();
+  const { leads, metrics, running, done, elapsedMs, start, reset } = useLeads();
   const throughput = metrics?.signalsProcessed ? `${metrics.signalsProcessed} signals processed` : '—';
 
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <ControlPanel running={running} onStart={start} onReset={reset} />
       <MetricsBar metrics={metrics} />
       <LeadList leads={leads} />
+      <RunSummary done={done} metrics={metrics} leads={leads} elapsedMs={elapsedMs} />
     </div>
   );
 }
