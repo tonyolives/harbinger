@@ -75,6 +75,17 @@ class InMemoryLeadRepositoryTest {
     }
 
     @Test
+    void clearRemovesEveryLead() {
+        repository.save(lead("a", 80, Tier.HOT, Instant.parse("2026-06-06T00:00:00Z")));
+        repository.save(lead("b", 30, Tier.COLD, Instant.parse("2026-06-06T01:00:00Z")));
+
+        repository.clear();
+
+        assertThat(repository.count()).isZero();
+        assertThat(repository.findAllRanked()).isEmpty();
+    }
+
+    @Test
     void nullArgumentsRejected() {
         assertThatThrownBy(() -> repository.save(null))
                 .isInstanceOf(IllegalArgumentException.class);

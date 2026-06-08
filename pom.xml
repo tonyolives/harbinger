@@ -122,6 +122,8 @@
 						<exclude>com/harbinger/HarbingerApplication.class</exclude>
 						<exclude>com/harbinger/DemoRunner.class</exclude>
 						<exclude>com/harbinger/bench/Benchmark.class</exclude>
+						<exclude>com/harbinger/service/pipeline/DemoFeedService.class</exclude>
+						<exclude>com/harbinger/controller/DemoController.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>

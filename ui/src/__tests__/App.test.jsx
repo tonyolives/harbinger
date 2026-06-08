@@ -61,7 +61,7 @@ afterEach(() => {
 test('loads the initial ranked leads and metrics', async () => {
   render(<App />);
   expect(await screen.findByText('owen purdy')).toBeInTheDocument();
-  expect(await screen.findByText(/signals 10/)).toBeInTheDocument();
+  expect(await screen.findByTestId('metric-signals')).toHaveTextContent('10');
 });
 
 test('a lead event triggers a refetch that shows the new ranked state', async () => {

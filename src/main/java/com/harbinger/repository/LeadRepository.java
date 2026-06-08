@@ -25,6 +25,9 @@ public interface LeadRepository {
     /** Remove the lead for a homeowner (used when a homeowner's resolved id changes). */
     void deleteById(UUID homeownerId);
 
+    /** Drop every stored lead (used when the demo feed is reset for a fresh run). */
+    void clear();
+
     /** Number of stored leads. */
     int count();
 }

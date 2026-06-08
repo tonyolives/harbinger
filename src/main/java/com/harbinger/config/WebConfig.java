@@ -6,7 +6,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web layer config: allow the Vite dev UI (Phase 8, {@code http://localhost:5173}) to call the
- * read API and open the SSE stream. Read-only surface, so only {@code GET} is permitted.
+ * read API, open the SSE stream, and drive the demo. {@code GET} covers the read endpoints and the
+ * stream; {@code POST} covers the demo control endpoints ({@code /demo/start}, {@code /demo/reset});
+ * {@code OPTIONS} covers any CORS preflight.
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -18,6 +20,6 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins(UI_ORIGIN)
-                .allowedMethods("GET");
+                .allowedMethods("GET", "POST", "OPTIONS");
     }
 }

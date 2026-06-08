@@ -1,8 +1,8 @@
-// Shared tier → color map (intentionally plain; Phase 9 will design the real palette).
+// Shared tier → color map, tuned to pop as accent stripes / badges on the dark command-center theme.
 export const TIER_COLOR = {
-  HOT: '#c0392b',
-  WARM: '#e67e22',
-  COLD: '#7f8c8d',
+  HOT: '#ff4d4f',
+  WARM: '#ffa940',
+  COLD: '#8794a8',
 };
 
 export function tierColor(tier) {

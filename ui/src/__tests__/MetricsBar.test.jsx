@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import MetricsBar from '../components/MetricsBar.jsx';
 
 const text = (container) => container.textContent.replace(/\s+/g, ' ');
@@ -9,7 +9,7 @@ test('renders nothing when metrics are absent', () => {
   expect(container).toBeEmptyDOMElement();
 });
 
-test('renders the metric values and tier breakdown', () => {
+test('renders the metric tiles and tier breakdown', () => {
   const { container } = render(
     <MetricsBar
       metrics={{
@@ -23,10 +23,10 @@ test('renders the metric values and tier breakdown', () => {
       }}
     />,
   );
-  expect(text(container)).toContain('signals 48');
-  expect(text(container)).toContain('leads 8');
-  expect(text(container)).toContain('p50 1ms');
-  expect(text(container)).toContain('p95 2ms');
+  expect(screen.getByTestId('metric-signals')).toHaveTextContent('48');
+  expect(screen.getByTestId('metric-leads')).toHaveTextContent('8');
+  expect(screen.getByTestId('metric-p50')).toHaveTextContent('1ms');
+  expect(screen.getByTestId('metric-p95')).toHaveTextContent('2ms');
   expect(text(container)).toContain('6 hot');
   expect(text(container)).toContain('2 warm');
   expect(text(container)).toContain('0 cold');
