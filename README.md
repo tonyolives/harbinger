@@ -3,6 +3,8 @@ A real-time seller-intent pipeline that turns raw public-record signals into ran
 
 `generate → normalize → resolve → enrich → score → explain → real-time loop + API → UI`
 
+**Demo:** [Full walkthrough](https://youtu.be/WbNOLUwR-vo) (10 min — architecture, metrics, live UI) · Short clip (45 sec): _paste link here_
+
 ## Run
 
 Backend (API + a paced replay of a synthetic signal stream):
