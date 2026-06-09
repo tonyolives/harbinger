@@ -55,7 +55,7 @@ Packages: `com.harbinger.{controller, service, service.pipeline, service.ingest,
 - Bench: fixed-seed run writes `benchmarks/report.json` + a chart PNG (XChart): resolution F1, tier counts, signal-to-lead p50/p95, throughput.
 - UI (Jest + RTL first): React + Vite; leads ranked and colored by tier, live updates via `EventSource`.
 - Docs: README with real numbers + 45-sec Loom; `SCORING.md`. Merge `develop` → `main`, tag `v0.1.0-demo`.
-- Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. Richer visualizations are deferred to keep v1 simple; a 45-sec Loom + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
+- Done: `com.harbinger.bench` (`BenchmarkRunner` reuses the pure services on a fixed seed; `Benchmark` main writes `benchmarks/report.json` + `tiers.png` via XChart), run with `make bench` (`exec-maven-plugin`). Minimal list-only React + Vite UI in `ui/` (ranked live lead list + tier-count metrics, refreshes on each SSE `lead` event; Jest + RTL tests). README filled with real numbers from `report.json`. Richer visualizations are deferred to keep v1 simple; [10-min demo](https://youtu.be/WbNOLUwR-vo) · short clip (45 sec): _paste link here_ + the `develop`→`main` merge and `v0.1.0-demo` tag are the remaining human ship steps.
 
 ---
 
