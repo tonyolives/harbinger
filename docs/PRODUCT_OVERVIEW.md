@@ -21,6 +21,8 @@ Real-estate agents and investors win by reaching a motivated homeowner **before 
 7. **Alert** — the instant a homeowner turns hot, a ranked lead is surfaced and the time-to-surface is recorded.
 8. **View** — leads appear live in a ranked list, colored by tier.
 
+**See it in action:** [10-minute walkthrough](https://youtu.be/WbNOLUwR-vo) (architecture, metrics, live UI) · Short clip (45 sec): _paste link here_
+
 ## What it is NOT (deliberately honest)
 
 - **Not real data.** Everything is synthetic — no real people, no scraping, no real contact lookups.
